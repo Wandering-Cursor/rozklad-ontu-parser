@@ -1,0 +1,30 @@
+name: Pylint
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
+        curl -sSL https://pdm-project.org/install-pdm.py | python3 -
+        pdm install --no-lock
+    - name: Analysing the code with pylint
+      run: |
+        pylint ontu_parser
