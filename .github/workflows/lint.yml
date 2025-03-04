@@ -7,7 +7,6 @@ on:
   pull_request:
     branches:
       - master
-  workflow_dispatch:
 
 jobs:
   build:
@@ -27,4 +26,4 @@ jobs:
         pdm install --no-lock
     - name: Analysing the code with pylint
       run: |
-        pylint ontu_parser
+        pdm run pylint ontu_parser
