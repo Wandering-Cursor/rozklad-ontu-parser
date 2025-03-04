@@ -1,4 +1,5 @@
 """Module with base classes"""
+
 import keyword
 
 from attrs import define
@@ -43,7 +44,7 @@ class BaseClass:
 
         def parse(val):
             # Added by Me - bs4 objects have any attr
-            if hasattr(val, 'to_dict') and val.to_dict:
+            if hasattr(val, "to_dict") and val.to_dict:
                 return val.to_dict(for_request)
             elif isinstance(val, list):
                 return [parse(it) for it in val]
@@ -61,7 +62,7 @@ class BaseClass:
 
         if for_request:
             for k, v in data.copy().items():
-                camel_case = ''.join(word.title() for word in k.split('_'))
+                camel_case = "".join(word.title() for word in k.split("_"))
                 camel_case = camel_case[0].lower() + camel_case[1:]
 
                 data.pop(k)
@@ -70,6 +71,6 @@ class BaseClass:
             for k, v in data.copy().items():
                 if k.lower() in reserved_names:
                     data.pop(k)
-                    data.update({f'{k}_': v})
+                    data.update({f"{k}_": v})
 
         return parse(data)

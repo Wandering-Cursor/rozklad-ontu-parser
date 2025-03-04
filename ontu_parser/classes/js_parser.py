@@ -36,6 +36,7 @@ class CookieValues(TypedDict):
 
 
 class JavaScriptParser:
+    # pylint: disable=too-few-public-methods
     """
     Parses JavaScript from HTML to get necessary values
     """
