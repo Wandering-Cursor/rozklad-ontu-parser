@@ -1,7 +1,8 @@
 # Rozklad ONTU Pareser
 
 ## Badges
-[![linting: pylint](https://img.shields.io/badge/linting-pylint-yellowgreen)](https://github.com/PyCQA/pylint)
+[![Pylint](https://github.com/Wandering-Cursor/rozklad-ontu-parser/actions/workflows/pylint.yml/badge.svg?branch=master)](https://github.com/Wandering-Cursor/rozklad-ontu-parser/actions/workflows/pylint.yml)
+[![Upload Python Package](https://github.com/Wandering-Cursor/rozklad-ontu-parser/actions/workflows/python-publish.yml/badge.svg)](https://github.com/Wandering-Cursor/rozklad-ontu-parser/actions/workflows/python-publish.yml)
 
 ## Links
 Available on [PyPi](https://pypi.org/project/rozklad-ontu-parser-MakisuKurisu/)
