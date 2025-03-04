@@ -3,7 +3,7 @@ requires = ["pdm-backend"]
 build-backend = "pdm.backend"
 
 [project]
-name = "rozklad-ontu-parser"
+name = "rozklad-ontu-parser-makisukurisu"
 version = "0.1.2.0"
 authors = [
     {name = "Pavlo Pohorieltsev", email = "49622129+makisukurisu@users.noreply.github.com"},
