@@ -36,5 +36,5 @@ files = ["requirements.txt"]
 [tool.pdm]
 distribution = true
 [project.urls]
-"Homepage" = "https://github.com/makisukurisu/rozklad-ontu-parser"
-"Bug Tracker" = "https://github.com/makisukurisu/rozklad-ontu-parser/issues"
+"Homepage" = "https://github.com/Wandering-Cursor/rozklad-ontu-parser"
+"Bug Tracker" = "https://github.com/Wandering-Cursor/rozklad-ontu-parser/issues"
