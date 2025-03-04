@@ -1,8 +1,9 @@
 # Rozklad ONTU Pareser
 
 ## Badges
-[![Pylint](https://github.com/Wandering-Cursor/rozklad-ontu-parser/actions/workflows/pylint.yml/badge.svg?branch=master)](https://github.com/Wandering-Cursor/rozklad-ontu-parser/actions/workflows/pylint.yml)
-[![Upload Python Package](https://github.com/Wandering-Cursor/rozklad-ontu-parser/actions/workflows/python-publish.yml/badge.svg)](https://github.com/Wandering-Cursor/rozklad-ontu-parser/actions/workflows/python-publish.yml)
+[![Pylint](https://github.com/Wandering-Cursor/rozklad-ontu-parser/actions/workflows/lint.yml/badge.svg?branch=master)](https://github.com/Wandering-Cursor/rozklad-ontu-parser/actions/workflows/lint.yml)
+[![Upload Python Package](https://github.com/Wandering-Cursor/rozklad-ontu-parser/actions/workflows/publish.yml/badge.svg)](https://github.com/Wandering-Cursor/rozklad-ontu-parser/actions/workflows/publish.yml)
+[![CodeQL](https://github.com/Wandering-Cursor/rozklad-ontu-parser/actions/workflows/github-code-scanning/codeql/badge.svg?branch=master)](https://github.com/Wandering-Cursor/rozklad-ontu-parser/actions/workflows/github-code-scanning/codeql)
 
 ## Links
 Available on [PyPi](https://pypi.org/project/rozklad-ontu-parser-MakisuKurisu/)
