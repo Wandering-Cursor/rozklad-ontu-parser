@@ -19,7 +19,7 @@ from .sender import Sender
 class Parser(BaseClass):
     """Parser class to get information from Rozklad ONTU"""
 
-    sender: Sender = None
+    sender: Sender
 
     def __init__(self, *args, **kwargs):
         if isinstance(kwargs, dict) and "kwargs" in kwargs:
@@ -34,6 +34,35 @@ class Parser(BaseClass):
             raise ValueError(f"Response: {response} has no content!", response)
         decoded_content = content.decode("utf-8")
         return BeautifulSoup(decoded_content, "html.parser")
+
+    def is_on_break(self) -> bool:
+        """
+        A check to see if the schedule system is on break.
+        During breaks, no schedules are available.
+
+        Using two methods:
+            - See if there's a text about being on break;
+            - See if there are any faculties listed. (If not - probably on break)
+
+        If either method indicates a break, returns True.
+        """
+        main_response = self.sender.send_request(
+            method=RequestsEnum.method_get())
+        main_page = self._get_page(main_response)
+
+        is_on_break_text = False
+        contents = main_page.find_all(
+            attrs={"data-role": "panel"},
+            recursive=True,
+        )
+        for content in contents:
+            if "доступний після" in content.text.lower():
+                is_on_break_text = True
+                break
+
+        has_faculties = len(main_page.find_all(attrs={"class": "fc"})) > 0
+
+        return is_on_break_text or not has_faculties
 
     def get_faculties(self) -> list[Faculty]:
         """Returns a list of faculties as Faculty objects"""
@@ -75,7 +104,8 @@ class Parser(BaseClass):
         if faculty_tag:
             return Faculty.from_tag(
                 faculty_tag,
-                prefix=(faculty_name_tag.text + " - ") if faculty_name_tag else "",
+                prefix=(faculty_name_tag.text +
+                        " - ") if faculty_name_tag else "",
                 parent_id=faculty_id,
             )
         return None
@@ -93,6 +123,9 @@ class Parser(BaseClass):
             if faculty.parent_id:
                 # Someone has decided that extramural groups can only be seen if you have seen this
                 # specific parent first :shrug:
+                # Apparently, they've changed it, and now you need to do the opposite:
+                # Visit parent, then a specific faculty ID
+                # Both are stupid. I'd better notify someone about this, but like they'll care...
                 self.get_groups(faculty_id=faculty.parent_id)
 
         if not any([faculty_id, faculty]):
@@ -219,7 +252,8 @@ class Parser(BaseClass):
         titles = departments_page.find(attrs={"class": "tiles-grid"})
         if not titles:
             raise ValueError("No titles found!")
-        departments_tags = titles.find_all(name="a", attrs={"data-role": "tile"})
+        departments_tags = titles.find_all(
+            name="a", attrs={"data-role": "tile"})
         departments = []
         for tag in departments_tags:
             departments.append(Department.from_tag(tag))
@@ -237,7 +271,10 @@ class Parser(BaseClass):
         teachers_tags = teachers_page.find_all(attrs={"class": "tiles-grid"})
         if not teachers_tags:
             raise ValueError("No teachers found!")
-        teachers_tags = teachers_tags[0].find_all(name="a", attrs={"data-role": "tile"})
+        teachers_tags = teachers_tags[0].find_all(
+            name="a",
+            attrs={"data-role": "tile"},
+        )
         teachers = []
         for tag in teachers_tags:
             teachers.append(Teacher.from_tag(tag))
