@@ -1,6 +1,0 @@
-*.pyc
-*.log
-dist/
-*__pycache__*
-.venv/
-.pdm-python

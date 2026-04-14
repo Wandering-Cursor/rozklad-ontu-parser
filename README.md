@@ -28,7 +28,7 @@ You can also find our other project that uses this library [here](https://github
 
 ## Requirements
 - [Python](https://python.org) 3.11 or higher
-- [PDM Package Manager](https://pdm-project.org/)
+- [uv package manager](https://docs.astral.sh/uv/)
 
 ## Honorable Mentions
 - [MarshalX](https://github.com/MarshalX) за [дозвіл](https://t.me/yandex_music_api/29677) позичити метод `to_dict` з його ліби: [yandex-music-api](https://github.com/MarshalX/yandex-music-api). (Було внесено мінімальні зміни через bs4 теги)

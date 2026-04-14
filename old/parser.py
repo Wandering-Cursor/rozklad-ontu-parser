@@ -3,17 +3,17 @@
 from bs4 import BeautifulSoup
 from requests import Response
 
-from .base import BaseClass
-from .dataclasses import (
-    Department,
-    Faculty,
-    Group,
+from ontu_parser.dataclasses.base import BaseClass
+from ontu_parser.dataclasses import (
     StudentsSchedule,
-    Teacher,
     TeacherSchedule,
+    Teacher,
+    Department,
+    Group,
+    Faculty,
 )
-from .enums import RequestsEnum
-from .sender import Sender
+from ontu_parser.enums import RequestsEnum
+from old.sender import Sender
 
 
 class Parser(BaseClass):
@@ -46,8 +46,7 @@ class Parser(BaseClass):
 
         If either method indicates a break, returns True.
         """
-        main_response = self.sender.send_request(
-            method=RequestsEnum.method_get())
+        main_response = self.sender.send_request(method=RequestsEnum.method_get())
         main_page = self._get_page(main_response)
 
         is_on_break_text = False
@@ -104,8 +103,7 @@ class Parser(BaseClass):
         if faculty_tag:
             return Faculty.from_tag(
                 faculty_tag,
-                prefix=(faculty_name_tag.text +
-                        " - ") if faculty_name_tag else "",
+                prefix=(faculty_name_tag.text + " - ") if faculty_name_tag else "",
                 parent_id=faculty_id,
             )
         return None
@@ -252,8 +250,7 @@ class Parser(BaseClass):
         titles = departments_page.find(attrs={"class": "tiles-grid"})
         if not titles:
             raise ValueError("No titles found!")
-        departments_tags = titles.find_all(
-            name="a", attrs={"data-role": "tile"})
+        departments_tags = titles.find_all(name="a", attrs={"data-role": "tile"})
         departments = []
         for tag in departments_tags:
             departments.append(Department.from_tag(tag))

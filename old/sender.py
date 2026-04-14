@@ -7,10 +7,10 @@ from urllib.parse import urlencode
 
 import requests
 
-from ontu_parser.classes.js_parser import CookieValues, JavaScriptParser
+from old.js_parser import CookieValues, JavaScriptParser
 
-from .base import BaseClass
-from .enums import RequestsEnum
+from ontu_parser.dataclasses.base import BaseClass
+from ontu_parser.enums import RequestsEnum
 
 API_URL = "https://rozklad.ontu.edu.ua"
 DEFAULT_HEADERS = {

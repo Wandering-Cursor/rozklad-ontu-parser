@@ -1,0 +1,319 @@
+import asyncio
+from collections.abc import Mapping
+import datetime
+import time
+
+import pydantic
+
+from ontu_parser.dataclasses.value_with_ttl import Cookies
+from ontu_parser.errors import RequestError, ValueExpiredError
+from ontu_parser.utils.logging import request_logger
+
+import httpx
+from httpx._types import RequestFiles, AuthTypes, RequestContent, RequestData
+
+from ontu_parser.settings import instance
+
+
+from typing import Literal, TypeVar
+
+from ontu_parser.utils.waf_solver import JavaScriptParser
+
+T = TypeVar("T")
+
+
+class BaseRequestSender(object):
+    def __init__(
+        self,
+        api_url: pydantic.HttpUrl | str = instance.api_url,
+        *,
+        for_teachers: bool = False,
+        cookies: dict[str, str] | None = None,
+        cookies_issued_at: datetime.datetime | None = None,
+    ):
+        if isinstance(api_url, str):
+            api_url = pydantic.HttpUrl(api_url)
+        self.api_url = api_url
+
+        if cookies and cookies_issued_at:
+            self._cookies = Cookies(
+                value=cookies,
+                issued_at=cookies_issued_at,
+            )
+
+        self._for_teachers = for_teachers
+
+    @classmethod
+    def headers(cls) -> dict[str, str]:
+        return {
+            "User-Agent": f"makisukurisu/rozklad-ontu-parser; (ontu_schedule_bot-{cls.__name__})",
+        }
+
+    @classmethod
+    def guest_page(cls) -> str:
+        """Used for general requests"""
+        return "/guest_n.php"
+
+    @classmethod
+    def teachers_page(cls) -> str:
+        """Used for requests related to teachers"""
+        return "/departments_all.php"
+
+
+class RequestSender(BaseRequestSender):
+    def __init__(
+        self,
+        api_url: pydantic.HttpUrl | str = instance.api_url,
+        *,
+        for_teachers: bool = False,
+        cookies: dict[str, str] | None = None,
+        cookies_issued_at: datetime.datetime | None = None,
+    ):
+        super().__init__(
+            api_url=api_url,
+            for_teachers=for_teachers,
+            cookies=cookies,
+            cookies_issued_at=cookies_issued_at,
+        )
+
+        if not hasattr(self, "_cookies"):
+            self._cookies: Cookies = self.update_cookies()
+
+        self.client = httpx.Client(
+            base_url=str(self.api_url), timeout=30, headers=self.headers()
+        )
+
+    def update_cookies(self) -> Cookies:
+        request_logger.info("Fetching cookies")
+
+        response = None
+        retries = 3
+
+        for i in range(retries):
+            response = self.send_request(
+                method="GET",
+                endpoint="",
+            )
+
+            if response.status_code == 200:
+                return Cookies(
+                    value=dict(response.cookies),
+                    issued_at=datetime.datetime.now(tz=datetime.UTC),
+                )
+
+            cookies = JavaScriptParser(
+                html=response.text,
+            ).parse()
+
+            session_response = self.send_request(
+                method="GET",
+                endpoint="/session.php",
+                cookies=cookies,
+            )
+            php_session_id = session_response.cookies.get("PHPSESSID")
+            if response.status_code == 503 or php_session_id is None:
+                retry_after = (i + 1) ** 2
+                request_logger.warning(
+                    f"Attempt {i + 1}: Could not get cookies. Retrying in {retry_after} seconds.",
+                )
+                time.sleep((i + 1) ** 2)
+                continue
+
+            return Cookies(
+                value={
+                    "PHPSESSID": php_session_id,
+                    **cookies.value,
+                },
+                issued_at=datetime.datetime.now(tz=datetime.UTC),
+            )
+
+        raise RequestError(
+            message=f"Could not get cookies after {retries} attempts",
+            status_code=response.status_code if response else None,
+            response_content=response.content if response else None,
+        )
+
+    def send_request(
+        self,
+        method: Literal["GET", "POST", "PUT", "DELETE", "PATCH"],
+        endpoint: str | None = None,
+        content: RequestContent | None = None,
+        data: RequestData | None = None,
+        files: RequestFiles | None = None,
+        json: object | None = None,
+        params: Mapping[str, str | int | float | bool] | None = None,
+        headers: dict[str, str] | None = None,
+        cookies: Cookies | dict[str, str] | None = None,
+        auth: AuthTypes | None = None,
+        timeout: float | None = None,
+        *,
+        refetch_cookies_on_expiry: bool = True,
+    ) -> httpx.Response:
+        request_logger.info(f"Sending {method} request to {endpoint}")
+
+        if endpoint is None:
+            endpoint = self.teachers_page() if self._for_teachers else self.guest_page()
+
+        headers = {**(headers or {}), **self.headers()}
+        if isinstance(cookies, Cookies):
+            try:
+                cookies = cookies.value
+            except ValueExpiredError:
+                if not refetch_cookies_on_expiry:
+                    raise
+                request_logger.info("Cookies expired, refetching")
+                self._cookies = self.update_cookies()
+                cookies = self._cookies.value
+
+        cookies = {**(cookies or {}), **self._cookies.value}
+
+        response = self.client.request(
+            method=method,
+            url=endpoint,
+            content=content,
+            data=data,
+            files=files,
+            json=json,
+            params=params,
+            headers=headers,
+            cookies=cookies,
+            auth=auth,
+            timeout=timeout,
+        )
+
+        request_logger.info(
+            f"Received response with status code {response.status_code}"
+        )
+
+        return response
+
+
+class AsyncRequestSender(BaseRequestSender):
+    def __init__(
+        self,
+        api_url: pydantic.HttpUrl | str = instance.api_url,
+        *,
+        for_teachers: bool = False,
+        cookies: dict[str, str] | None = None,
+        cookies_issued_at: datetime.datetime | None = None,
+    ):
+        super().__init__(
+            api_url=api_url,
+            for_teachers=for_teachers,
+            cookies=cookies,
+            cookies_issued_at=cookies_issued_at,
+        )
+
+        if not hasattr(self, "_cookies"):
+            # Technicallity because we cannot call async functions in __init__
+            self._cookies: Cookies = Cookies(value={}, issued_at=datetime.datetime.min)
+
+        self.client = httpx.AsyncClient(
+            base_url=str(self.api_url),
+            timeout=30,
+            headers=self.headers(),
+        )
+
+    async def update_cookies(self) -> Cookies:
+        request_logger.info("Fetching cookies")
+
+        response = None
+        retries = 3
+
+        for i in range(retries):
+            response = await self.send_request(
+                method="GET",
+                endpoint="",
+            )
+
+            if response.status_code == 200:
+                return Cookies(
+                    value=dict(response.cookies),
+                    issued_at=datetime.datetime.now(tz=datetime.UTC),
+                )
+
+            cookies = await JavaScriptParser(
+                html=response.text,
+            ).async_parse()
+
+            session_response = await self.send_request(
+                method="GET",
+                endpoint="/session.php",
+                cookies=cookies,
+            )
+            php_session_id = session_response.cookies.get("PHPSESSID")
+            if response.status_code == 503 or php_session_id is None:
+                retry_after = (i + 1) ** 2
+                request_logger.warning(
+                    f"Attempt {i + 1}: Could not get cookies. Retrying in {retry_after} seconds.",
+                )
+                await asyncio.sleep(retry_after)
+                continue
+
+            return Cookies(
+                value={
+                    "PHPSESSID": php_session_id,
+                    **cookies.value,
+                },
+                issued_at=datetime.datetime.now(tz=datetime.UTC),
+            )
+
+        raise RequestError(
+            message=f"Could not get cookies after {retries} attempts",
+            status_code=response.status_code if response else None,
+            response_content=response.content if response else None,
+        )
+
+    async def send_request(
+        self,
+        method: Literal["GET", "POST", "PUT", "DELETE", "PATCH"],
+        endpoint: str | None = None,
+        content: RequestContent | None = None,
+        data: RequestData | None = None,
+        files: RequestFiles | None = None,
+        json: object | None = None,
+        params: Mapping[str, str | int | float | bool] | None = None,
+        headers: dict[str, str] | None = None,
+        cookies: Cookies | dict[str, str] | None = None,
+        auth: AuthTypes | None = None,
+        timeout: float | None = None,
+        *,
+        refetch_cookies_on_expiry: bool = True,
+    ) -> httpx.Response:
+        request_logger.info(f"Sending {method} request to {endpoint}")
+
+        if endpoint is None:
+            endpoint = self.teachers_page() if self._for_teachers else self.guest_page()
+
+        headers = {**(headers or {}), **self.headers()}
+        if isinstance(cookies, Cookies):
+            try:
+                cookies = cookies.value
+            except ValueExpiredError:
+                if not refetch_cookies_on_expiry:
+                    raise
+                request_logger.info("Cookies expired, refetching")
+                self._cookies = await self.update_cookies()
+                cookies = self._cookies.value
+
+        cookies = {**(cookies or {}), **self._cookies.value}
+
+        response = await self.client.request(
+            method=method,
+            url=endpoint,
+            content=content,
+            data=data,
+            files=files,
+            json=json,
+            params=params,
+            headers=headers,
+            cookies=cookies,
+            auth=auth,
+            timeout=timeout,
+        )
+
+        request_logger.info(
+            f"Received response with status code {response.status_code}"
+        )
+
+        return response

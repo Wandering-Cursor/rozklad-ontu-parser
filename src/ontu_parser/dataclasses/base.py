@@ -1,9 +1,11 @@
 """Module with base classes"""
 
 import keyword
+from typing import Any
 
 from attrs import define
 from bs4.element import Tag
+from pydantic import BaseModel, ConfigDict
 
 reserved_names = keyword.kwlist
 
@@ -30,7 +32,7 @@ class BaseClass:
     # Copied from https://github.com/MarshalX/yandex-music-api/blob/a30082f4929e56381c870cb03103777ae29bcc6b/yandex_music/base.py
     # Thanks to MarshalX for this amazing serializer
     # *Added pylint disable!
-    def to_dict(self, for_request=False) -> dict:
+    def to_dict(self, for_request=False) -> dict | list | Any:
         # pylint: disable=R1705, C0103, C0301
         """Рекурсивная сериализация объекта.
         Args:
@@ -42,7 +44,7 @@ class BaseClass:
             :obj:`dict`: Сериализованный в dict объект.
         """
 
-        def parse(val):
+        def parse(val: BaseClass | Any) -> dict | list | Any:
             # Added by Me - bs4 objects have any attr
             if hasattr(val, "to_dict") and val.to_dict:
                 return val.to_dict(for_request)
@@ -74,3 +76,25 @@ class BaseClass:
                     data.update({f"{k}_": v})
 
         return parse(data)
+
+
+class BaseTag(BaseClass):
+    """Base Tag Class for parsing BS4 tags from responses"""
+
+    @classmethod
+    def from_tag(cls, tag):
+        """Checks tag and returns initialized object"""
+        raise NotImplementedError("`from_tag` Not implemented")
+
+    @staticmethod
+    def _check_tag(tag: Tag):
+        """Checks if tag is valid for usage"""
+        raise NotImplementedError("`_check_tag` Not implemented")
+
+
+class BaseSchema(BaseModel):
+    """A modern base class for schemas, based on Pydantic's BaseModel"""
+
+    model_config = ConfigDict(
+        from_attributes=True,
+    )
