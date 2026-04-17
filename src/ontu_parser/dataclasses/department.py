@@ -42,7 +42,7 @@ class Department(BaseTag):
         return obj
 
     @cached_property
-    def get_department_picture(self) -> str | None:
+    def department_picture(self) -> str | None:
         """Returns class of the picture (if present)"""
         container = self.department.find(name="div", attrs={"class": "slide-front"})
         if not container:
