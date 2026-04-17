@@ -34,7 +34,10 @@ class JavaScriptParser:
         self: "JavaScriptParser",
         notbot_script: str,
     ) -> str:
-        return notbot_script.split("setCookie('notbot','")[1].split("');", maxsplit=1)[0].strip()
+        self._notbot_value = (
+            notbot_script.split("setCookie('notbot','")[1].split("');", maxsplit=1)[0].strip()
+        )
+        return self._notbot_value
 
     def __make_combinations(
         self: "JavaScriptParser",
