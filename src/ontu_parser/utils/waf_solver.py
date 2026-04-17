@@ -4,12 +4,13 @@ This is a module with classes capable of parsing and passing 2WAF JavaScript cha
 
 import asyncio
 import re
+import time
 import urllib.parse
 from base64 import b64encode
 from hashlib import sha256
-import time
 
 from bs4 import BeautifulSoup
+
 from ontu_parser.dataclasses import Cookies
 
 
@@ -33,10 +34,7 @@ class JavaScriptParser:
         self: "JavaScriptParser",
         notbot_script: str,
     ) -> str:
-        self._notbot_value = (
-            notbot_script.split("setCookie('notbot','")[1].split("');")[0].strip()
-        )
-        return self._notbot_value
+        return notbot_script.split("setCookie('notbot','")[1].split("');", maxsplit=1)[0].strip()
 
     def __make_combinations(
         self: "JavaScriptParser",
@@ -123,13 +121,13 @@ class JavaScriptParser:
         pow_result_script: str | None = None
 
         for script in script_tags:
-            script = script.strip()
+            value = script.strip()
 
-            if "document.onreadystatechange" in script:
-                self._get_notbot_cookie(script)
+            if "document.onreadystatechange" in value:
+                self._get_notbot_cookie(value)
                 continue
-            if '"use strict"' in script or "const hash4find" in script:
-                pow_result_script = script
+            if '"use strict"' in value or "const hash4find" in value:
+                pow_result_script = value
                 continue
         if not pow_result_script:
             raise ValueError("Could not find pow_result script")
@@ -157,14 +155,15 @@ class JavaScriptParser:
         pow_result_script: str | None = None
 
         for script in script_tags:
-            script = script.strip()
+            value = script.strip()
 
-            if "document.onreadystatechange" in script:
-                self._get_notbot_cookie(script)
+            if "document.onreadystatechange" in value:
+                self._get_notbot_cookie(value)
                 continue
-            if '"use strict"' in script or "const hash4find" in script:
-                pow_result_script = script
+            if '"use strict"' in value or "const hash4find" in value:
+                pow_result_script = value
                 continue
+
         if not pow_result_script:
             raise ValueError("Could not find pow_result script")
 

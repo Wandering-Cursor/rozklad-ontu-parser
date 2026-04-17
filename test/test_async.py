@@ -1,8 +1,9 @@
 import logging
 
-from ontu_parser.parser._async import AsyncParser
-
 import pytest
+
+from ontu_parser.dataclasses.faculty import Faculty
+from ontu_parser.parser._async import AsyncParser
 from test.common import async_skip_on_break
 
 
@@ -19,14 +20,12 @@ async def test_faculties(async_parser: AsyncParser, faculty_name: str) -> None:
     assert it_faculty is not None, f"{faculty_name} faculty not found"
 
 
-async def get_faculty_by_name(async_parser: AsyncParser, faculty_name: str):
+async def get_faculty_by_name(async_parser: AsyncParser, faculty_name: str) -> Faculty:
     faculties = await async_parser.get_faculties()
 
     it_faculty = next(filter(lambda f: f.faculty_name == faculty_name, faculties), None)
 
-    assert it_faculty is not None, (
-        f"{faculty_name} faculty not found from faculties list"
-    )
+    assert it_faculty is not None, f"{faculty_name} faculty not found from faculties list"
 
     return it_faculty
 
@@ -66,7 +65,7 @@ async def test_get_extramural(
         f"{second_faculty_name} extramural faculty should not be found"
     )
     assert second_extramural != it_extramural, (
-        f"{second_faculty_name} extramural faculty should not be the same as {faculty_name} extramural faculty"
+        f"{second_faculty_name} extramural faculty should not be the same as {faculty_name} extramural faculty"  # noqa: E501
     )
 
 

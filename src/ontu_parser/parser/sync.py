@@ -1,15 +1,15 @@
 from bs4 import BeautifulSoup
 from httpx import Response
 
-from ontu_parser.dataclasses.base import BaseClass
 from ontu_parser.dataclasses import (
-    StudentsSchedule,
-    TeacherSchedule,
-    Teacher,
     Department,
-    Group,
     Faculty,
+    Group,
+    StudentsSchedule,
+    Teacher,
+    TeacherSchedule,
 )
+from ontu_parser.dataclasses.base import BaseClass
 from ontu_parser.dataclasses.pair import StudentsPair, TeachersPair
 from ontu_parser.dataclasses.sender import SenderOptions
 from ontu_parser.errors import ParingError
@@ -22,7 +22,7 @@ class Parser(BaseClass):
     def __init__(
         self,
         sender_options: SenderOptions | None = None,
-    ):
+    ) -> None:
         self.for_teachers = sender_options.for_teachers if sender_options else False
 
         if sender_options:
@@ -172,7 +172,8 @@ class Parser(BaseClass):
         self,
         group_id: int | None = None,
         teacher_id: int | None = None,
-        all_time=False,
+        *,
+        all_time: bool = False,
     ) -> dict[str, list[TeachersPair | StudentsPair]]:
         """Returns schedule for group, or for teachers"""
         if group_id:
@@ -249,7 +250,7 @@ class Parser(BaseClass):
             )
         return TeacherSchedule.from_tag(grid)
 
-    def _check_for_teachers(self):
+    def _check_for_teachers(self) -> None:
         if not self.for_teachers:
             raise ValueError(
                 "This parser instance is not configured for teachers!\n"

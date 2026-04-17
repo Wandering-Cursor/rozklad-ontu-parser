@@ -1,12 +1,12 @@
-from typing import AsyncGenerator, Generator
+from collections.abc import AsyncGenerator, Generator
 
 import pytest
-
 import pytest_asyncio
+
 from ontu_parser.dataclasses.cookies import Cookies
 from ontu_parser.dataclasses.sender import SenderOptions
-from ontu_parser.utils.request_sender import RequestSender
 from ontu_parser.parser import AsyncParser, Parser
+from ontu_parser.utils.request_sender import RequestSender
 
 
 @pytest.fixture(scope="session")
@@ -16,7 +16,7 @@ def cookies() -> Cookies:
     if getattr(sender, "_cookies", None) is None:
         return sender.update_cookies()
 
-    return sender._cookies
+    return sender._cookies  # noqa: SLF001
 
 
 @pytest.fixture()
@@ -86,7 +86,7 @@ def faculty_name() -> str:
 
 @pytest.fixture()
 def it_faculty_group_prefix() -> str:
-    return "КН-"
+    return "КН-"  # noqa: RUF001
 
 
 @pytest.fixture()

@@ -1,10 +1,10 @@
 from functools import cached_property
-
-from ontu_parser.dataclasses.base import BaseTag
-
+from typing import Any
 
 from attrs import define
 from bs4.element import Tag
+
+from ontu_parser.dataclasses.base import BaseTag
 from ontu_parser.utils.logging import main_logger
 
 
@@ -15,7 +15,7 @@ class Group(BaseTag):
     group_tag: Tag
 
     @staticmethod
-    def _check_tag(tag):
+    def _check_tag(tag: Tag) -> None:
         attrs: list = getattr(tag, "attrs", None)  # pyright: ignore[reportAssignmentType]
         required = ["data-id"]
         for requirement in required:
@@ -26,7 +26,7 @@ class Group(BaseTag):
                     required,
                 )
 
-        # Children requiremenets
+        # Children requirements
         icon = tag.find(attrs={"class": "icon"})
         text = tag.find(attrs={"class": "branding-bar"})
         required = [icon, text]
@@ -34,17 +34,18 @@ class Group(BaseTag):
             raise ValueError(f"Invalid tag: {tag} doesn't have suitable children", tag)
 
     @classmethod
-    def from_tag(cls, tag):
+    def from_tag(cls, tag: Any) -> "Group":  # noqa: ANN401
         cls._check_tag(tag)
+
         return cls(group_tag=tag)
 
     @cached_property
-    def text(self):
+    def text(self):  # noqa: ANN201
         """Returns text tag from group tag"""
         return self.group_tag.find(attrs={"class": "branding-bar"})
 
     @cached_property
-    def icon(self):
+    def icon(self):  # noqa: ANN201
         """Returns icon tag from group tag"""
         return self.group_tag.find(attrs={"class": "icon"})
 

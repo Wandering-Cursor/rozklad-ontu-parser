@@ -1,23 +1,19 @@
 import datetime
-from typing import Generic, TypeVar
+from typing import TypeVar
 
 from ontu_parser.errors import ValueExpiredError
 
 T = TypeVar("T")
 
 
-class ValueWithTTL(Generic[T]):
+class ValueWithTTL[T]:
     def __init__(
         self,
         value: T,
         ttl: datetime.timedelta | int = datetime.timedelta(hours=1),
         issued_at: datetime.datetime | None = None,
-    ):
-        self.ttl = (
-            ttl
-            if isinstance(ttl, datetime.timedelta)
-            else datetime.timedelta(seconds=ttl)
-        )
+    ) -> None:
+        self.ttl = ttl if isinstance(ttl, datetime.timedelta) else datetime.timedelta(seconds=ttl)
 
         self._value = value
         self.issued_at = issued_at or datetime.datetime.now(tz=datetime.UTC)

@@ -14,17 +14,17 @@ from .teacher import Teacher
 from .value_with_ttl import ValueWithTTL
 
 __all__ = [
+    "BaseStudentsLesson",
+    "Cookies",
     "Department",
     "Faculty",
     "Group",
-    "BaseStudentsLesson",
-    "StudentsRegularLesson",
-    "TeachersLesson",
     "StudentsPair",
-    "TeachersPair",
+    "StudentsRegularLesson",
     "StudentsSchedule",
-    "TeacherSchedule",
     "Teacher",
+    "TeacherSchedule",
+    "TeachersLesson",
+    "TeachersPair",
     "ValueWithTTL",
-    "Cookies",
 ]

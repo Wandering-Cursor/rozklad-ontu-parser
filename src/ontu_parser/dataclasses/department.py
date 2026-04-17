@@ -1,11 +1,11 @@
-from ontu_parser.dataclasses.base import BaseTag
-
+from functools import cached_property
+from urllib.parse import parse_qsl
 
 from attrs import define
 from bs4.element import Tag
 
-
-from urllib.parse import parse_qsl
+from ontu_parser.dataclasses.base import BaseTag
+from ontu_parser.dataclasses.name import NameRepresentation
 
 
 @define
@@ -15,8 +15,8 @@ class Department(BaseTag):
     department: Tag
 
     @staticmethod
-    def _check_tag(tag):
-        attrs = getattr(tag, "attrs", None)
+    def _check_tag(tag: Tag) -> None:
+        attrs: list = getattr(tag, "attrs", None)  # pyright: ignore[reportAssignmentType]
         span = tag.find(name="span", attrs={"class": "branding-bar"})
         required_properties = [attrs, span]
         if not all(required_properties):
@@ -34,14 +34,15 @@ class Department(BaseTag):
             raise ValueError(f"Invalid tag: {tag}, `span` has no string", tag)
 
     @classmethod
-    def from_tag(cls, tag):
+    def from_tag(cls, tag: Tag) -> "Department":
         cls._check_tag(tag)
         obj = cls(department=tag)
         if not obj.department:
             raise ValueError("Invalid tag", tag)
         return obj
 
-    def get_department_picture(self):
+    @cached_property
+    def get_department_picture(self) -> str | None:
         """Returns class of the picture (if present)"""
         container = self.department.find(name="div", attrs={"class": "slide-front"})
         if not container:
@@ -49,30 +50,52 @@ class Department(BaseTag):
         span = container.find(name="span")
         if not span:
             return None
-        return span.attrs.get("class", None)
 
-    def get_department_link(self):
+        classes = span.attrs.get("class", [])
+
+        if isinstance(classes, str):
+            classes = classes.split()
+
+        if "icon" in classes:
+            classes.remove("icon")
+
+        if len(classes) == 0:
+            return None
+
+        return classes[0]
+
+    @cached_property
+    def department_link(self) -> str:
         """Returns (semi?) permanent relative link to department"""
-        return self.department.attrs["href"]
+        value = self.department.attrs["href"]
+        if isinstance(value, list):
+            return value[0]
+        return value
 
-    def get_department_id(self) -> int:
+    @cached_property
+    def department_id(self) -> int:
         """Return id of the department"""
-        key_dict = dict(parse_qsl(self.get_department_link()))
+        key_dict = dict(parse_qsl(self.department_link))
+
         return int(key_dict["dep"])
 
-    def get_department_name(self) -> dict[str, str]:
+    @cached_property
+    def department_name(self) -> NameRepresentation:
         """Returns name of the faculty"""
-        name = {"short": "", "full": ""}
-        short_name_span = self.department.find(
-            name="span", attrs={"class": "branding-bar"}
-        )
+        requires_capitalization_word_length = 2
+
+        short_name_span = self.department.find(name="span", attrs={"class": "branding-bar"})
         full_name_span = self.department.find(name="div", attrs={"class": "slide-back"})
-        name["short"] = short_name_span.text.strip() if short_name_span else ""
-        full_name = full_name_span.text.strip() if full_name_span else ""
-        name["full"] = full_name
+        short_name = short_name_span.get_text(strip=True) if short_name_span else ""
+        full_name = full_name_span.get_text(strip=True) if full_name_span else ""
+
         if full_name:
             words = full_name.split()
-            name["full"] = " ".join(
-                [x.capitalize() if len(x) > 2 else x for x in words]
+            full_name = " ".join(
+                [
+                    x.capitalize() if len(x) > requires_capitalization_word_length else x
+                    for x in words
+                ]
             )
-        return name
+
+        return NameRepresentation(short=short_name, full=full_name)

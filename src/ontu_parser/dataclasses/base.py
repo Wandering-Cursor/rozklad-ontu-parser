@@ -14,14 +14,14 @@ reserved_names = keyword.kwlist
 class BaseClass:
     """Provides common base for descendants"""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:  # noqa: ANN002, ANN003
         """Mock to allow using __init__ with args and kwargs (see Parser class)"""
 
-    def get_as_str(self):
+    def get_as_str(self) -> str:
         """Returns __dict__ in a string format"""
         return str(self.__dict__)
 
-    def get_class_as_str(self):
+    def get_class_as_str(self) -> str:
         """Returns __class__ in a string formt"""
         return str(self.__class__)
 
@@ -32,7 +32,7 @@ class BaseClass:
     # Copied from https://github.com/MarshalX/yandex-music-api/blob/a30082f4929e56381c870cb03103777ae29bcc6b/yandex_music/base.py
     # Thanks to MarshalX for this amazing serializer
     # *Added pylint disable!
-    def to_dict(self, for_request=False) -> dict | list | Any:
+    def to_dict(self, for_request=False) -> dict | list | Any:  # noqa: ANN001, ANN401
         # pylint: disable=R1705, C0103, C0301
         """Рекурсивная сериализация объекта.
         Args:
@@ -42,20 +42,19 @@ class BaseClass:
             К зарезервированным словам добавляет "_" в конец.
         Returns:
             :obj:`dict`: Сериализованный в dict объект.
-        """
+        """  # noqa: E501, RUF002
 
-        def parse(val: BaseClass | Any) -> dict | list | Any:
+        def parse(val: BaseClass | Any) -> dict | list | Any:  # noqa: ANN401
             # Added by Me - bs4 objects have any attr
             if hasattr(val, "to_dict") and val.to_dict:
                 return val.to_dict(for_request)
-            elif isinstance(val, list):
+            if isinstance(val, list):
                 return [parse(it) for it in val]
-            elif isinstance(val, dict):
+            if isinstance(val, dict):
                 return {key: parse(value) for key, value in val.items()}
-            elif isinstance(val, Tag):
+            if isinstance(val, Tag):
                 return {val.__class__: val.name}
-            else:
-                return val
+            return val
 
         data = self.__dict__.copy()
         # Removed nonexistent pops
@@ -82,12 +81,12 @@ class BaseTag(BaseClass):
     """Base Tag Class for parsing BS4 tags from responses"""
 
     @classmethod
-    def from_tag(cls, tag):
+    def from_tag(cls, tag: Tag) -> "BaseTag":
         """Checks tag and returns initialized object"""
         raise NotImplementedError("`from_tag` Not implemented")
 
     @staticmethod
-    def _check_tag(tag: Tag):
+    def _check_tag(tag: Tag) -> None:
         """Checks if tag is valid for usage"""
         raise NotImplementedError("`_check_tag` Not implemented")
 

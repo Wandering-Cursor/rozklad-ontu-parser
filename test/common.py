@@ -1,6 +1,6 @@
 import pytest
 
-from ontu_parser.parser import Parser, AsyncParser
+from ontu_parser.parser import AsyncParser, Parser
 
 
 def skip_on_break(parser: Parser) -> bool:

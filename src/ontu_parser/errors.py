@@ -3,7 +3,7 @@ class BaseError(Exception):
 
 
 class ValueExpiredError(ValueError, BaseError):
-    def __init__(self, value: object, message="Value is expired"):
+    def __init__(self, value: object, message: str = "Value is expired") -> None:
         self.value = value
         super().__init__(
             {
@@ -19,7 +19,7 @@ class RequestError(BaseError):
         message: str,
         status_code: int | None,
         response_content: bytes | None,
-    ):
+    ) -> None:
         self.status_code = status_code
         self.response_content = response_content
         super().__init__(
@@ -32,7 +32,7 @@ class RequestError(BaseError):
 
 
 class ParingError(BaseError):
-    def __init__(self, message: str, content: str | None = None):
+    def __init__(self, message: str, content: str | None = None) -> None:
         self.content = content
         super().__init__(
             {

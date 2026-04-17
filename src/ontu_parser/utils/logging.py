@@ -2,7 +2,6 @@ import logging
 
 from ontu_parser.settings import instance
 
-
 if instance.log_to_file:
     logging.basicConfig(
         level=instance.log_level.value,

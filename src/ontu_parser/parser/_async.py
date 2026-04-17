@@ -1,15 +1,15 @@
 from bs4 import BeautifulSoup
 from httpx import Response
 
-from ontu_parser.dataclasses.base import BaseClass
 from ontu_parser.dataclasses import (
-    StudentsSchedule,
-    TeacherSchedule,
-    Teacher,
     Department,
-    Group,
     Faculty,
+    Group,
+    StudentsSchedule,
+    Teacher,
+    TeacherSchedule,
 )
+from ontu_parser.dataclasses.base import BaseClass
 from ontu_parser.dataclasses.pair import StudentsPair, TeachersPair
 from ontu_parser.dataclasses.sender import SenderOptions
 from ontu_parser.errors import ParingError
@@ -22,7 +22,7 @@ class AsyncParser(BaseClass):
     def __init__(
         self,
         sender_options: SenderOptions | None = None,
-    ):
+    ) -> None:
         self.for_teachers = sender_options.for_teachers if sender_options else False
 
         if sender_options:
@@ -106,10 +106,7 @@ class AsyncParser(BaseClass):
         return list(
             filter(
                 None,
-                [
-                    await self.get_extramural(faculty)
-                    for faculty in await self.get_faculties()
-                ],
+                [await self.get_extramural(faculty) for faculty in await self.get_faculties()],
             )
         )
 
@@ -175,7 +172,8 @@ class AsyncParser(BaseClass):
         self,
         group_id: int | None = None,
         teacher_id: int | None = None,
-        all_time=False,
+        *,
+        all_time: bool = False,
     ) -> dict[str, list[TeachersPair | StudentsPair]]:
         """
         Returns schedule for group, or for teachers
@@ -183,9 +181,7 @@ class AsyncParser(BaseClass):
         if group_id:
             return (await self.get_group_schedule(group_id, all_time=all_time)).week
         if teacher_id:
-            return (
-                await self.get_teachers_schedule(teacher_id, all_time=all_time)
-            ).week
+            return (await self.get_teachers_schedule(teacher_id, all_time=all_time)).week
         raise ValueError("No group or teacher id provided!")
 
     async def get_group_schedule(
@@ -223,7 +219,7 @@ class AsyncParser(BaseClass):
         subgroup_name = group_name.split("[")[1].replace("]", "")
         return StudentsSchedule.from_tag(table, subgroup=subgroup_name)
 
-    def _check_for_teachers(self):
+    def _check_for_teachers(self) -> None:
         if not self.for_teachers:
             raise ValueError(
                 "This parser instance is not configured for teachers!\n"

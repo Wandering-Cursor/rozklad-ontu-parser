@@ -1,11 +1,12 @@
-from ontu_parser.dataclasses.base import BaseTag
-
+from functools import cached_property
+from typing import Any
+from urllib.parse import parse_qsl
 
 from attrs import define
 from bs4.element import Tag
 
-
-from urllib.parse import parse_qsl
+from ontu_parser.dataclasses.base import BaseTag
+from ontu_parser.dataclasses.name import NameRepresentation
 
 
 @define
@@ -15,8 +16,8 @@ class Teacher(BaseTag):
     teacher: Tag
 
     @staticmethod
-    def _check_tag(tag):
-        attrs = getattr(tag, "attrs", None)
+    def _check_tag(tag: Any) -> None:  # noqa: ANN401
+        attrs: list = getattr(tag, "attrs", None)  # pyright: ignore[reportAssignmentType]
         span = tag.find(name="span", attrs={"class": "branding-bar"})
         required_properties = [attrs, span]
         if not all(required_properties):
@@ -34,45 +35,58 @@ class Teacher(BaseTag):
             raise ValueError(f"Invalid tag: {tag}, `span` has no string", tag)
 
     @classmethod
-    def from_tag(cls, tag):
+    def from_tag(cls, tag: Any) -> "Teacher":  # noqa: ANN401
         cls._check_tag(tag)
         obj = cls(teacher=tag)
         if not obj.teacher:
             raise ValueError("Invalid tag", tag)
         return obj
 
-    def get_teacher_picture(self):
+    @cached_property
+    def teacher_picture(self) -> str | None:
         """Returns class of the picture (if present)"""
         container = self.teacher.find(name="div", attrs={"class": "slide-front"})
         if not container:
             return None
+
         span = container.find(name="span")
         if not span:
             return None
-        return span.attrs.get("class", None)
 
-    def get_teacher_link(self):
+        classes = span.attrs.get("class", [])
+        if isinstance(classes, str):
+            classes = classes.split()
+
+        if "icon" in classes:
+            classes.remove("icon")
+
+        if len(classes) == 0:
+            return None
+
+        return classes[0]
+
+    @cached_property
+    def teacher_link(self) -> str:
         """Returns (semi?) permanent relative link to department"""
-        return self.teacher.attrs["href"]
+        value = self.teacher.attrs["href"]
+        if isinstance(value, list):
+            value = value[0]
+        return value
 
-    def get_teacher_id(self) -> int:
-        """Return id of teacher"""
-        key_dict = dict(parse_qsl(self.get_teacher_link()))
+    @cached_property
+    def teacher_id(self) -> int:
+        """Returns id of the Teacher"""
+        key_dict = dict(parse_qsl(self.teacher_link))
         return int(key_dict["teacher"])
 
-    def get_teacher_name(self) -> dict[str, str]:
-        """Returns name of the faculty"""
-        name = {"short": "", "full": ""}
-        short_name_span = self.teacher.find(
-            name="span", attrs={"class": "branding-bar"}
-        )
+    @cached_property
+    def teacher_name(self) -> NameRepresentation:
+        """Returns name of the Teacher"""
+
+        short_name_span = self.teacher.find(name="span", attrs={"class": "branding-bar"})
         full_name_span = self.teacher.find(name="div", attrs={"class": "slide-back"})
-        name["short"] = short_name_span.text.strip() if short_name_span else ""
-        full_name = full_name_span.text.strip() if full_name_span else ""
-        name["full"] = full_name
-        if full_name:
-            words = full_name.split()
-            name["full"] = " ".join(
-                [x.capitalize() if len(x) > 2 else x for x in words]
-            )
-        return name
+
+        short_name = short_name_span.get_text(strip=True) if short_name_span else ""
+        full_name = full_name_span.get_text(strip=True) if full_name_span else ""
+
+        return NameRepresentation(short=short_name, full=full_name)

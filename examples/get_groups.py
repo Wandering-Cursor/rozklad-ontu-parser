@@ -3,7 +3,7 @@ If you try running this script multiple times, you'll notice that
 for each cookie you get different Group IDs. That's because their IDs are tied to the PHP Session.
 
 Thus, you CANNOT use Group IDs to store groups in database, and should fetch groups by name each time.
-"""
+"""  # noqa: E501
 
 from ontu_parser.parser import Parser
 from ontu_parser.utils.logging import main_logger

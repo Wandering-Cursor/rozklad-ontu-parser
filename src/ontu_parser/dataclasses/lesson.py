@@ -1,7 +1,6 @@
-from ontu_parser.dataclasses.base import BaseTag
-
-
 from bs4.element import Tag
+
+from ontu_parser.dataclasses.base import BaseTag
 
 
 class BaseStudentsLesson(BaseTag):
@@ -18,17 +17,17 @@ class BaseStudentsLesson(BaseTag):
     lesson_info: str = ""
     auditorium: str | None = None
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:  # noqa: ANN002, ANN003
         self.teacher: dict = {}
         self.lesson_name: dict = {}
         super().__init__(*args, **kwargs)
 
     @staticmethod
-    def _check_tag(tag: Tag):
+    def _check_tag(tag: Tag) -> None:
         # Dear Gods, forgive me for not checking tags for lessons
         pass
 
-    def parse_tag(self):
+    def parse_tag(self) -> None:
         """This method parses bs4 and stores data from it in object's fields"""
         raise NotImplementedError(
             "`parse_tag` was not implemented\n"
@@ -44,22 +43,30 @@ class StudentsRegularLesson(BaseStudentsLesson):
     """
 
     @classmethod
-    def from_tag(cls, tag):
+    def from_tag(cls, tag: Tag) -> "StudentsRegularLesson":
         obj = cls()
         obj.lesson_tag = tag
         obj.parse_tag()
         return obj
 
-    def parse_tag(self):
+    def parse_tag(self) -> None:
         lesson_top = self.lesson_tag.parent
 
+        assert lesson_top is not None, "Could not find lesson top tag"
+
         predm_element = lesson_top.find(name="span", attrs={"class": "predm"})
+
+        assert predm_element is not None, "Could not find lesson name tag"
+
         self.lesson_name = {
             "short": predm_element.text,
             "full": predm_element.attrs.get("title", "Not Set"),
         }
 
         prp_element = lesson_top.find(name="span", attrs={"class": "prp"})
+
+        assert prp_element is not None, "Could not find teacher tag"
+
         self.teacher = {
             "short": prp_element.text.replace("\xa0", " "),  # Why...
             "full": prp_element.attrs.get("title", "Not Set"),

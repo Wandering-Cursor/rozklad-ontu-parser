@@ -1,10 +1,9 @@
 from functools import cached_property
 
-from ontu_parser.dataclasses.base import BaseTag
-
-
 from attrs import define
 from bs4.element import Tag
+
+from ontu_parser.dataclasses.base import BaseTag
 
 
 @define
@@ -16,8 +15,8 @@ class Faculty(BaseTag):
     faculty_tag: Tag
 
     @staticmethod
-    def _check_tag(tag):
-        attrs = getattr(tag, "attrs", None)
+    def _check_tag(tag: Tag) -> None:
+        attrs: list = getattr(tag, "attrs", None)
         span = getattr(tag, "span", None)
         required_properties = [attrs, span]
         if not all(required_properties):
@@ -37,10 +36,10 @@ class Faculty(BaseTag):
     @classmethod
     def from_tag(
         cls,
-        tag,
+        tag: Tag,
         prefix: str = "",
         parent_id: int | None = None,
-    ):
+    ) -> "Faculty":
         cls._check_tag(tag)
         return cls(
             faculty_tag=tag,

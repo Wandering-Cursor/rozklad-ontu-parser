@@ -1,4 +1,4 @@
-name: Pylint
+name: Lint
 
 on:
   push:
@@ -24,6 +24,7 @@ jobs:
       run: |
         pip install uv
         uv sync
-    - name: Analysing the code with pylint
+    - name: Analysing the code with ruff
       run: |
-        uv lint ontu_parser
+        uv run ruff check . &&
+        uv run ruff format .
