@@ -31,6 +31,7 @@ class AsyncParser(BaseClass):
                 for_teachers=sender_options.for_teachers,
                 cookies=sender_options.cookies,
                 cookies_issued_at=sender_options.cookies_issued_at,
+                max_cookie_retries=sender_options.max_cookie_retries,
             )
         else:
             self.sender = AsyncRequestSender()
@@ -213,6 +214,13 @@ class AsyncParser(BaseClass):
         group_breadcrumbs = breadcrumbs.find_all(attrs={"class": "page-link"})
 
         table = schedule_page.find(attrs={"class": "table"})
+
+        if not table:
+            raise ParingError(
+                "Schedule page has no schedule table! Can't parse schedule!",
+                content=str(schedule_page),
+            )
+
         group_name = group_breadcrumbs[-1].text
         # I hate this, but at the same time - I love it
         # If it ever to become broken I'll implement this a bit thoughtfully :)

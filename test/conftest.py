@@ -11,7 +11,7 @@ from ontu_parser.utils.request_sender import RequestSender
 
 @pytest.fixture(scope="session")
 def cookies() -> Cookies:
-    sender = RequestSender()
+    sender = RequestSender(max_cookie_retries=5)
 
     if getattr(sender, "_cookies", None) is None:
         return sender.update_cookies()
@@ -25,6 +25,7 @@ def regular_parser(cookies: Cookies) -> Generator[Parser, None, None]:
         sender_options=SenderOptions(
             cookies=cookies.value,
             cookies_issued_at=cookies.issued_at,
+            max_cookie_retries=5,
         )
     )
     try:
@@ -40,6 +41,7 @@ def teacher_parser(cookies: Cookies) -> Generator[Parser, None, None]:
             for_teachers=True,
             cookies=cookies.value,
             cookies_issued_at=cookies.issued_at,
+            max_cookie_retries=5,
         )
     )
     try:
@@ -54,6 +56,7 @@ async def async_parser(cookies: Cookies) -> AsyncGenerator[AsyncParser, None]:
         sender_options=SenderOptions(
             cookies=cookies.value,
             cookies_issued_at=cookies.issued_at,
+            max_cookie_retries=5,
         )
     )
 
@@ -70,6 +73,7 @@ async def async_teacher_parser(cookies: Cookies) -> AsyncGenerator[AsyncParser, 
             for_teachers=True,
             cookies=cookies.value,
             cookies_issued_at=cookies.issued_at,
+            max_cookie_retries=5,
         )
     )
 

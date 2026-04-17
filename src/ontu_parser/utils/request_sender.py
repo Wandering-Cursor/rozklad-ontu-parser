@@ -26,6 +26,7 @@ class BaseRequestSender:
         for_teachers: bool = False,
         cookies: dict[str, str] | None = None,
         cookies_issued_at: datetime.datetime | None = None,
+        max_cookie_retries: int = 3,
     ) -> None:
         if isinstance(api_url, str):
             api_url = pydantic.HttpUrl(api_url)
@@ -48,6 +49,8 @@ class BaseRequestSender:
             )
 
         self._for_teachers = for_teachers
+
+        self.max_cookie_retries = max_cookie_retries
 
     @classmethod
     def headers(cls) -> dict[str, str]:
@@ -74,12 +77,14 @@ class RequestSender(BaseRequestSender):
         for_teachers: bool = False,
         cookies: dict[str, str] | None = None,
         cookies_issued_at: datetime.datetime | None = None,
+        max_cookie_retries: int = 3,
     ) -> None:
         super().__init__(
             api_url=api_url,
             for_teachers=for_teachers,
             cookies=cookies,
             cookies_issued_at=cookies_issued_at,
+            max_cookie_retries=max_cookie_retries,
         )
 
         self.client = httpx.Client(base_url=str(self.api_url), timeout=30, headers=self.headers())
@@ -91,7 +96,7 @@ class RequestSender(BaseRequestSender):
         request_logger.info("Fetching cookies")
 
         response = None
-        retries = 3
+        retries = self.max_cookie_retries
 
         response = self.send_request(
             method="GET",
@@ -211,12 +216,14 @@ class AsyncRequestSender(BaseRequestSender):
         for_teachers: bool = False,
         cookies: dict[str, str] | None = None,
         cookies_issued_at: datetime.datetime | None = None,
+        max_cookie_retries: int = 3,
     ) -> None:
         super().__init__(
             api_url=api_url,
             for_teachers=for_teachers,
             cookies=cookies,
             cookies_issued_at=cookies_issued_at,
+            max_cookie_retries=max_cookie_retries,
         )
 
         self.client = httpx.AsyncClient(
@@ -229,7 +236,7 @@ class AsyncRequestSender(BaseRequestSender):
         request_logger.info("Fetching cookies")
 
         response = None
-        retries = 3
+        retries = self.max_cookie_retries
 
         response = await self.send_request(
             method="GET",

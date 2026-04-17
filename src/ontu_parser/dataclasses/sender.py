@@ -10,3 +10,4 @@ class SenderOptions(BaseSchema):
     for_teachers: bool = False
     cookies: dict[str, str] | None = None
     cookies_issued_at: datetime.datetime | None = None
+    max_cookie_retries: int = 3
