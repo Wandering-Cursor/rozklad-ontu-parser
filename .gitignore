@@ -1,6 +1,4 @@
-*.pyc
-*.log
+__pycache__/
 dist/
-*__pycache__*
 .venv/
-.pdm-python
+.pytest_cache/

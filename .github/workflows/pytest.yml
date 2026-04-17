@@ -1,4 +1,4 @@
-name: Lint
+name: Pytest
 
 on:
   push:
@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.12"]
+        python-version: ["3.12", "3.13", "3.14"]
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }}
@@ -27,7 +27,6 @@ jobs:
       run: |
         pip install uv
         uv sync
-    - name: Analysing the code with ruff
+    - name: Run tests
       run: |
-        uv run ruff check . &&
-        uv run ruff format .
+        uv run pytest -v
