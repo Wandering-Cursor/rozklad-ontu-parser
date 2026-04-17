@@ -1,12 +1,9 @@
-from ontu_parser.utils.request_sender import ValueWithTTL
-
-
 class BaseError(Exception):
     pass
 
 
 class ValueExpiredError(ValueError, BaseError):
-    def __init__(self, value: ValueWithTTL, message="Value is expired"):
+    def __init__(self, value: object, message="Value is expired"):
         self.value = value
         super().__init__(
             {

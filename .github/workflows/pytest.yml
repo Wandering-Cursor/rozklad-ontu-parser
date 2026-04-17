@@ -1,4 +1,4 @@
-name: Pylint
+name: Pytest
 
 on:
   push:
@@ -24,6 +24,6 @@ jobs:
       run: |
         pip install uv
         uv sync
-    - name: Analysing the code with pylint
+    - name: Run tests
       run: |
-        uv lint ontu_parser
+        uv run pytest -v

@@ -5,7 +5,7 @@ import time
 
 import pydantic
 
-from ontu_parser.dataclasses.value_with_ttl import Cookies
+from ontu_parser.dataclasses import Cookies
 from ontu_parser.errors import RequestError, ValueExpiredError
 from ontu_parser.utils.logging import request_logger
 
@@ -76,12 +76,22 @@ class RequestSender(BaseRequestSender):
             cookies_issued_at=cookies_issued_at,
         )
 
-        if not hasattr(self, "_cookies"):
-            self._cookies: Cookies = self.update_cookies()
-
         self.client = httpx.Client(
             base_url=str(self.api_url), timeout=30, headers=self.headers()
         )
+
+        if not hasattr(self, "_cookies"):
+            self._cookies: Cookies = Cookies(
+                value={},
+                issued_at=datetime.datetime(
+                    2000,
+                    1,
+                    1,
+                    tzinfo=datetime.UTC,
+                ),
+            )
+
+            self._cookies: Cookies = self.update_cookies()
 
     def update_cookies(self) -> Cookies:
         request_logger.info("Fetching cookies")
@@ -89,34 +99,38 @@ class RequestSender(BaseRequestSender):
         response = None
         retries = 3
 
-        for i in range(retries):
-            response = self.send_request(
-                method="GET",
-                endpoint="",
+        response = self.send_request(
+            method="GET",
+            endpoint="",
+            ignore_own_cookies=True,
+        )
+
+        if response.status_code == 200:
+            return Cookies(
+                value=dict(response.cookies),
+                issued_at=datetime.datetime.now(tz=datetime.UTC),
             )
 
-            if response.status_code == 200:
-                return Cookies(
-                    value=dict(response.cookies),
-                    issued_at=datetime.datetime.now(tz=datetime.UTC),
-                )
+        cookies = JavaScriptParser(
+            html=response.text,
+        ).parse()
 
-            cookies = JavaScriptParser(
-                html=response.text,
-            ).parse()
-
+        for i in range(retries):
             session_response = self.send_request(
                 method="GET",
-                endpoint="/session.php",
+                endpoint="",
                 cookies=cookies,
+                ignore_own_cookies=True,
             )
+
             php_session_id = session_response.cookies.get("PHPSESSID")
-            if response.status_code == 503 or php_session_id is None:
+
+            if php_session_id is None:
                 retry_after = (i + 1) ** 2
                 request_logger.warning(
                     f"Attempt {i + 1}: Could not get cookies. Retrying in {retry_after} seconds.",
                 )
-                time.sleep((i + 1) ** 2)
+                time.sleep(retry_after)
                 continue
 
             return Cookies(
@@ -126,12 +140,12 @@ class RequestSender(BaseRequestSender):
                 },
                 issued_at=datetime.datetime.now(tz=datetime.UTC),
             )
-
-        raise RequestError(
-            message=f"Could not get cookies after {retries} attempts",
-            status_code=response.status_code if response else None,
-            response_content=response.content if response else None,
-        )
+        else:
+            raise RequestError(
+                message=f"Could not get cookies after {retries} attempts",
+                status_code=response.status_code if response else None,
+                response_content=response.content if response else None,
+            )
 
     def send_request(
         self,
@@ -148,6 +162,7 @@ class RequestSender(BaseRequestSender):
         timeout: float | None = None,
         *,
         refetch_cookies_on_expiry: bool = True,
+        ignore_own_cookies: bool = False,
     ) -> httpx.Response:
         request_logger.info(f"Sending {method} request to {endpoint}")
 
@@ -155,17 +170,26 @@ class RequestSender(BaseRequestSender):
             endpoint = self.teachers_page() if self._for_teachers else self.guest_page()
 
         headers = {**(headers or {}), **self.headers()}
+
         if isinstance(cookies, Cookies):
+            # not trying to refetch, since these cookies were
+            # explicitly passed by the user, so they should know if they are expired or not
+            cookies = cookies.value
+
+        if ignore_own_cookies:
+            cookies = cookies or {}
+        else:
             try:
-                cookies = cookies.value
+                cookies = {**(cookies or {}), **self._cookies.value}
             except ValueExpiredError:
                 if not refetch_cookies_on_expiry:
                     raise
+
                 request_logger.info("Cookies expired, refetching")
                 self._cookies = self.update_cookies()
-                cookies = self._cookies.value
+                cookies = {**(cookies or {}), **self._cookies.value}
 
-        cookies = {**(cookies or {}), **self._cookies.value}
+        self.client.cookies = cookies
 
         response = self.client.request(
             method=method,
@@ -176,7 +200,6 @@ class RequestSender(BaseRequestSender):
             json=json,
             params=params,
             headers=headers,
-            cookies=cookies,
             auth=auth,
             timeout=timeout,
         )
@@ -206,7 +229,15 @@ class AsyncRequestSender(BaseRequestSender):
 
         if not hasattr(self, "_cookies"):
             # Technicallity because we cannot call async functions in __init__
-            self._cookies: Cookies = Cookies(value={}, issued_at=datetime.datetime.min)
+            self._cookies: Cookies = Cookies(
+                value={},
+                issued_at=datetime.datetime(
+                    2000,
+                    1,
+                    1,
+                    tzinfo=datetime.UTC,
+                ),
+            )
 
         self.client = httpx.AsyncClient(
             base_url=str(self.api_url),
@@ -220,29 +251,33 @@ class AsyncRequestSender(BaseRequestSender):
         response = None
         retries = 3
 
-        for i in range(retries):
-            response = await self.send_request(
-                method="GET",
-                endpoint="",
+        response = await self.send_request(
+            method="GET",
+            endpoint="",
+            ignore_own_cookies=True,
+        )
+
+        if response.status_code == 200:
+            return Cookies(
+                value=dict(response.cookies),
+                issued_at=datetime.datetime.now(tz=datetime.UTC),
             )
 
-            if response.status_code == 200:
-                return Cookies(
-                    value=dict(response.cookies),
-                    issued_at=datetime.datetime.now(tz=datetime.UTC),
-                )
+        cookies = await JavaScriptParser(
+            html=response.text,
+        ).async_parse()
 
-            cookies = await JavaScriptParser(
-                html=response.text,
-            ).async_parse()
-
+        for i in range(retries):
             session_response = await self.send_request(
                 method="GET",
-                endpoint="/session.php",
+                endpoint="",
                 cookies=cookies,
+                ignore_own_cookies=True,
             )
+
             php_session_id = session_response.cookies.get("PHPSESSID")
-            if response.status_code == 503 or php_session_id is None:
+
+            if php_session_id is None:
                 retry_after = (i + 1) ** 2
                 request_logger.warning(
                     f"Attempt {i + 1}: Could not get cookies. Retrying in {retry_after} seconds.",
@@ -257,12 +292,12 @@ class AsyncRequestSender(BaseRequestSender):
                 },
                 issued_at=datetime.datetime.now(tz=datetime.UTC),
             )
-
-        raise RequestError(
-            message=f"Could not get cookies after {retries} attempts",
-            status_code=response.status_code if response else None,
-            response_content=response.content if response else None,
-        )
+        else:
+            raise RequestError(
+                message=f"Could not get cookies after {retries} attempts",
+                status_code=response.status_code if response else None,
+                response_content=response.content if response else None,
+            )
 
     async def send_request(
         self,
@@ -279,6 +314,7 @@ class AsyncRequestSender(BaseRequestSender):
         timeout: float | None = None,
         *,
         refetch_cookies_on_expiry: bool = True,
+        ignore_own_cookies: bool = False,
     ) -> httpx.Response:
         request_logger.info(f"Sending {method} request to {endpoint}")
 
@@ -286,17 +322,26 @@ class AsyncRequestSender(BaseRequestSender):
             endpoint = self.teachers_page() if self._for_teachers else self.guest_page()
 
         headers = {**(headers or {}), **self.headers()}
+
         if isinstance(cookies, Cookies):
+            # not trying to refetch, since these cookies were
+            # explicitly passed by the user, so they should know if they are expired or not
+            cookies = cookies.value
+
+        if ignore_own_cookies:
+            cookies = cookies or {}
+        else:
             try:
-                cookies = cookies.value
+                cookies = {**(cookies or {}), **self._cookies.value}
             except ValueExpiredError:
                 if not refetch_cookies_on_expiry:
                     raise
+
                 request_logger.info("Cookies expired, refetching")
                 self._cookies = await self.update_cookies()
-                cookies = self._cookies.value
+                cookies = {**(cookies or {}), **self._cookies.value}
 
-        cookies = {**(cookies or {}), **self._cookies.value}
+        self.client.cookies = cookies
 
         response = await self.client.request(
             method=method,
@@ -307,7 +352,6 @@ class AsyncRequestSender(BaseRequestSender):
             json=json,
             params=params,
             headers=headers,
-            cookies=cookies,
             auth=auth,
             timeout=timeout,
         )

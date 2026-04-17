@@ -10,7 +10,7 @@ from hashlib import sha256
 import time
 
 from bs4 import BeautifulSoup
-from ontu_parser.dataclasses.value_with_ttl import Cookies
+from ontu_parser.dataclasses import Cookies
 
 
 class JavaScriptParser:
@@ -147,7 +147,7 @@ class JavaScriptParser:
         return Cookies(
             value={
                 "notbot": self._notbot_value,
-                "pow_result": self._pow_result,
+                "pow-result": self._pow_result,
             }
         )
 
@@ -181,6 +181,6 @@ class JavaScriptParser:
         return Cookies(
             value={
                 "notbot": self._notbot_value,
-                "pow_result": self._pow_result,
+                "pow-result": self._pow_result,
             }
         )

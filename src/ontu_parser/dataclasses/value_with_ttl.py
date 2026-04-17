@@ -1,9 +1,12 @@
 import datetime
+from typing import Generic, TypeVar
 
 from ontu_parser.errors import ValueExpiredError
 
+T = TypeVar("T")
 
-class ValueWithTTL[T](object):
+
+class ValueWithTTL(Generic[T]):
     def __init__(
         self,
         value: T,
@@ -17,11 +20,11 @@ class ValueWithTTL[T](object):
         )
 
         self._value = value
-        self.issued_at = issued_at or datetime.datetime.now()
+        self.issued_at = issued_at or datetime.datetime.now(tz=datetime.UTC)
 
     @property
     def is_valid(self) -> bool:
-        return datetime.datetime.now() - self.issued_at < self.ttl
+        return datetime.datetime.now(tz=datetime.UTC) - self.issued_at < self.ttl
 
     @property
     def value(self) -> T:
@@ -35,7 +38,3 @@ class ValueWithTTL[T](object):
 
     def __repr__(self) -> str:
         return f"ValueWithTTL(ttl={self.ttl}, issued_at={self.issued_at})"
-
-
-class Cookies(ValueWithTTL[dict[str, str]]):
-    pass

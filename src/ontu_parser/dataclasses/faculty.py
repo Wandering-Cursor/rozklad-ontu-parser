@@ -1,3 +1,5 @@
+from functools import cached_property
+
 from ontu_parser.dataclasses.base import BaseTag
 
 
@@ -46,17 +48,30 @@ class Faculty(BaseTag):
             parent_id=parent_id,
         )
 
-    def get_faculty_picture(self):
+    @cached_property
+    def faculty_picture(self) -> str | None:
         """Returns relative link to picture (if present)"""
-        return self.faculty_tag.attrs.get("data-cover", None)
+        data_cover = self.faculty_tag.attrs.get("data-cover", None)
 
-    def get_faculty_id(self) -> str:
+        if isinstance(data_cover, list):
+            return data_cover[0]
+
+        return data_cover
+
+    @cached_property
+    def faculty_id(self) -> int:
         """Returns temporary id of faculty (for later use in search)"""
         result = self.faculty_tag.attrs["data-id"]
         if isinstance(result, list):
-            return result[0]
-        return result
+            return int(result[0])
+        return int(result)
 
-    def get_faculty_name(self):
+    @cached_property
+    def faculty_name(self) -> str:
         """Returns name of the faculty"""
-        return f"{self.prefix}{self.faculty_tag.span.string}"
+        name = (self.faculty_tag.span.string if self.faculty_tag.span else None) or ""
+
+        if self.prefix:
+            return f"{self.prefix} {name}".strip()
+
+        return name.strip()

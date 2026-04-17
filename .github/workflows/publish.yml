@@ -18,13 +18,13 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.10'
+        python-version: '3.12'
     - name: Install dependencies
       run: |
-        curl -sSL https://pdm-project.org/install-pdm.py | python3 -
-        pdm install --no-lock
+        pip install uv
+        uv sync
     - name: Build package
-      run: pdm build
+      run: uv build -s
     - name: Publish package
       uses: pypa/gh-action-pypi-publish@release/v1
       with:

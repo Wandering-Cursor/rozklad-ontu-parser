@@ -1,8 +1,11 @@
+from functools import cached_property
+
 from ontu_parser.dataclasses.base import BaseTag
 
 
 from attrs import define
 from bs4.element import Tag
+from ontu_parser.utils.logging import main_logger
 
 
 @define
@@ -11,12 +14,9 @@ class Group(BaseTag):
 
     group_tag: Tag
 
-    _icon_tag_filter = {"attrs": {"class": "icon"}}
-    _text_tag_filter = {"attrs": {"class": "branding-bar"}}
-
     @staticmethod
     def _check_tag(tag):
-        attrs = getattr(tag, "attrs", None)
+        attrs: list = getattr(tag, "attrs", None)  # pyright: ignore[reportAssignmentType]
         required = ["data-id"]
         for requirement in required:
             if requirement not in attrs:
@@ -27,9 +27,8 @@ class Group(BaseTag):
                 )
 
         # Children requiremenets
-
-        icon = tag.find(**Group._icon_tag_filter)
-        text = tag.find(**Group._text_tag_filter)
+        icon = tag.find(attrs={"class": "icon"})
+        text = tag.find(attrs={"class": "branding-bar"})
         required = [icon, text]
         if not all(required):
             raise ValueError(f"Invalid tag: {tag} doesn't have suitable children", tag)
@@ -39,34 +38,50 @@ class Group(BaseTag):
         cls._check_tag(tag)
         return cls(group_tag=tag)
 
-    @property
+    @cached_property
     def text(self):
         """Returns text tag from group tag"""
-        return self.group_tag.find(**self._text_tag_filter)
+        return self.group_tag.find(attrs={"class": "branding-bar"})
 
-    @property
+    @cached_property
     def icon(self):
         """Returns icon tag from group tag"""
-        return self.group_tag.find(**self._icon_tag_filter)
+        return self.group_tag.find(attrs={"class": "icon"})
 
-    def get_group_id(self):
-        """Returns (temporary) id of this group"""
-        return self.group_tag.attrs["data-id"]
+    @cached_property
+    def group_id(self) -> str:
+        """Returns id of this group"""
+        value = self.group_tag.attrs["data-id"]
 
-    def get_group_name(self):
+        if isinstance(value, list):
+            return value[0]
+
+        return value
+
+    @cached_property
+    def group_name(self) -> str | None:
         """Retunrs a name of the group or None"""
         if not self.text:
-            print(f"text tag not found in {self.group_tag}")
+            main_logger.warning(f"Could not find text tag in {self.group_tag}")
             return None
+
         return self.text.string
 
-    def get_group_icon(self):
+    @cached_property
+    def group_icon(self) -> str | None:
         """Returns name of the icon of the group or None"""
         if not self.icon:
-            print(f"icon tag not found in {self.group_tag}")
+            main_logger.warning(f"Could not find icon tag in {self.group_tag}")
             return None
-        # Hardcoding this
-        attrs = self.icon.attrs.copy()
-        # Feels bad :(
-        attrs.pop("icon")
-        return attrs[0]
+
+        classes = self.icon.attrs.get("class", [])
+        if isinstance(classes, str):
+            classes = classes.split()
+
+        if "icon" in classes:
+            classes.remove("icon")
+
+        if len(classes) == 0:
+            return None
+
+        return classes[0]
