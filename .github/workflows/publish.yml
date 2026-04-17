@@ -24,7 +24,7 @@ jobs:
         pip install uv
         uv sync
     - name: Build package
-      run: uv build -s
+      run: uv build
     - name: Publish package
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
