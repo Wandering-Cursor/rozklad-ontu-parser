@@ -31,7 +31,7 @@ class RequestError(BaseError):
         )
 
 
-class ParingError(BaseError):
+class ParsingError(BaseError):
     def __init__(
         self,
         message: str,
@@ -48,3 +48,6 @@ class ParingError(BaseError):
                 "underlying_error": underlying_error,
             }
         )
+
+
+ParingError = ParsingError  # Compatibility alias, will be deprecated in 1.1.0

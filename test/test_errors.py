@@ -6,7 +6,7 @@ import pytest_asyncio
 from httpx import HTTPStatusError
 
 from ontu_parser.dataclasses.sender import SenderOptions
-from ontu_parser.errors import ParingError
+from ontu_parser.errors import ParsingError
 from ontu_parser.parser._async import AsyncParser
 
 
@@ -30,7 +30,7 @@ async def async_parser_with_invalid_cookies() -> AsyncGenerator[AsyncParser, Non
 async def test_async_parser_with_invalid_cookies(
     async_parser_with_invalid_cookies: AsyncParser,
 ) -> None:
-    with pytest.raises(ParingError) as exc_info:
+    with pytest.raises(ParsingError) as exc_info:
         await async_parser_with_invalid_cookies.get_faculties()
 
     error = exc_info.value
