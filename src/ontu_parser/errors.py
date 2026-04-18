@@ -31,12 +31,23 @@ class RequestError(BaseError):
         )
 
 
-class ParingError(BaseError):
-    def __init__(self, message: str, content: str | None = None) -> None:
+class ParsingError(BaseError):
+    def __init__(
+        self,
+        message: str,
+        content: str | None = None,
+        underlying_error: Exception | None = None,
+    ) -> None:
         self.content = content
+        self.underlying_error = underlying_error
+
         super().__init__(
             {
                 "msg": message,
                 "content": content,
+                "underlying_error": underlying_error,
             }
         )
+
+
+ParingError = ParsingError  # Compatibility alias, will be deprecated in 1.1.0

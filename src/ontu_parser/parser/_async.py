@@ -1,5 +1,5 @@
 from bs4 import BeautifulSoup
-from httpx import Response
+from httpx import HTTPStatusError, Response
 
 from ontu_parser.dataclasses import (
     Department,
@@ -12,8 +12,9 @@ from ontu_parser.dataclasses import (
 from ontu_parser.dataclasses.base import BaseClass
 from ontu_parser.dataclasses.pair import StudentsPair, TeachersPair
 from ontu_parser.dataclasses.sender import SenderOptions
-from ontu_parser.errors import ParingError
+from ontu_parser.errors import ParsingError
 from ontu_parser.utils.request_sender import AsyncRequestSender
+from ontu_parser.utils.text import trim_text
 
 
 class AsyncParser(BaseClass):
@@ -37,10 +38,30 @@ class AsyncParser(BaseClass):
             self.sender = AsyncRequestSender()
 
     def _get_page(self, response: Response) -> BeautifulSoup:
+        try:
+            response.raise_for_status()
+        except HTTPStatusError as e:
+            raise ParsingError(
+                message=str(e),
+                content=trim_text(
+                    response.content.decode("utf-8", errors="ignore") if response.content else ""
+                ),
+                underlying_error=e,
+            ) from e
+
         content = response.content
+
         if not content:
-            raise ParingError("Response has no content!", content=str(response))
+            raise ParsingError(
+                "Response has no content!",
+                content=trim_text(
+                    response.content.decode("utf-8", errors="ignore") if response.content else ""
+                ),
+                underlying_error=None,
+            )
+
         decoded_content = content.decode("utf-8")
+
         return BeautifulSoup(decoded_content, "html.parser")
 
     async def is_on_break(self) -> bool:
@@ -206,7 +227,7 @@ class AsyncParser(BaseClass):
         breadcrumbs = schedule_page.find(attrs={"class": "breadcrumbs"})
 
         if not breadcrumbs:
-            raise ParingError(
+            raise ParsingError(
                 "Schedule page has no breadcrumbs! Can't determine faculty and group!",
                 content=str(schedule_page),
             )
@@ -216,7 +237,7 @@ class AsyncParser(BaseClass):
         table = schedule_page.find(attrs={"class": "table"})
 
         if not table:
-            raise ParingError(
+            raise ParsingError(
                 "Schedule page has no schedule table! Can't parse schedule!",
                 content=str(schedule_page),
             )
@@ -258,7 +279,7 @@ class AsyncParser(BaseClass):
 
         grid = schedule_page.find(name="div", attrs={"class": "grid"})
         if not grid:
-            raise ParingError(
+            raise ParsingError(
                 "Schedule page has no grid! Can't parse teacher's schedule!",
                 content=str(schedule_page),
             )
@@ -274,7 +295,7 @@ class AsyncParser(BaseClass):
         tiles = departments_page.find(attrs={"class": "tiles-grid"})
 
         if not tiles:
-            raise ParingError("No tiles found!", content=str(departments_page))
+            raise ParsingError("No tiles found!", content=str(departments_page))
 
         departments_tags = tiles.find_all(name="a", attrs={"data-role": "tile"})
 
@@ -295,7 +316,7 @@ class AsyncParser(BaseClass):
 
         teacher_tiles = teachers_page.find(attrs={"class": "tiles-grid"})
         if not teacher_tiles:
-            raise ParingError("No teachers found!", content=str(teachers_page))
+            raise ParsingError("No teachers found!", content=str(teachers_page))
 
         teacher_tiles = teacher_tiles.find_all(
             name="a",

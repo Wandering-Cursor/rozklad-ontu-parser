@@ -1,5 +1,5 @@
 from bs4 import BeautifulSoup
-from httpx import Response
+from httpx import HTTPStatusError, Response
 
 from ontu_parser.dataclasses import (
     Department,
@@ -12,8 +12,9 @@ from ontu_parser.dataclasses import (
 from ontu_parser.dataclasses.base import BaseClass
 from ontu_parser.dataclasses.pair import StudentsPair, TeachersPair
 from ontu_parser.dataclasses.sender import SenderOptions
-from ontu_parser.errors import ParingError
+from ontu_parser.errors import ParsingError
 from ontu_parser.utils.request_sender import RequestSender
+from ontu_parser.utils.text import trim_text
 
 
 class Parser(BaseClass):
@@ -37,10 +38,30 @@ class Parser(BaseClass):
             self.sender = RequestSender()
 
     def _get_page(self, response: Response) -> BeautifulSoup:
+        try:
+            response.raise_for_status()
+        except HTTPStatusError as e:
+            raise ParsingError(
+                message=str(e),
+                content=trim_text(
+                    response.content.decode("utf-8", errors="ignore") if response.content else ""
+                ),
+                underlying_error=e,
+            ) from e
+
         content = response.content
+
         if not content:
-            raise ParingError("Response has no content!", content=str(response))
+            raise ParsingError(
+                "Response has no content!",
+                content=trim_text(
+                    response.content.decode("utf-8", errors="ignore") if response.content else ""
+                ),
+                underlying_error=None,
+            )
+
         decoded_content = content.decode("utf-8")
+
         return BeautifulSoup(decoded_content, "html.parser")
 
     def is_on_break(self) -> bool:
@@ -206,7 +227,7 @@ class Parser(BaseClass):
         breadcrumbs = schedule_page.find(attrs={"class": "breadcrumbs"})
 
         if not breadcrumbs:
-            raise ParingError(
+            raise ParsingError(
                 "Schedule page has no breadcrumbs! Can't determine faculty and group!",
                 content=str(schedule_page),
             )
@@ -216,7 +237,7 @@ class Parser(BaseClass):
         table = schedule_page.find(attrs={"class": "table"})
 
         if not table:
-            raise ParingError(
+            raise ParsingError(
                 "Schedule page has no schedule table! Can't parse schedule!",
                 content=str(schedule_page),
             )
@@ -252,7 +273,7 @@ class Parser(BaseClass):
 
         grid = schedule_page.find(name="div", attrs={"class": "grid"})
         if not grid:
-            raise ParingError(
+            raise ParsingError(
                 "Schedule page has no grid! Can't parse teacher's schedule!",
                 content=str(schedule_page),
             )
@@ -273,7 +294,7 @@ class Parser(BaseClass):
         departments_page = self._get_page(departments_response)
         titles = departments_page.find(attrs={"class": "tiles-grid"})
         if not titles:
-            raise ParingError("No titles found!", content=str(departments_page))
+            raise ParsingError("No titles found!", content=str(departments_page))
         departments_tags = titles.find_all(name="a", attrs={"data-role": "tile"})
         departments = []
         for tag in departments_tags:
@@ -291,7 +312,7 @@ class Parser(BaseClass):
         teachers_page = self._get_page(teachers_response)
         teachers_tags = teachers_page.find_all(attrs={"class": "tiles-grid"})
         if not teachers_tags:
-            raise ParingError("No teachers found!", content=str(teachers_page))
+            raise ParsingError("No teachers found!", content=str(teachers_page))
         teachers_tags = teachers_tags[0].find_all(
             name="a",
             attrs={"data-role": "tile"},
