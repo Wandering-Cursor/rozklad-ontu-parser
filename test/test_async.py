@@ -129,3 +129,25 @@ async def test_get_extramural_groups(
             f"{faculty_name} extramural group with {it_faculty_group_prefix} prefix not found\n"
             "Ignoring for extramurals, since they can have different group names."
         )
+
+
+@pytest.mark.asyncio
+async def test_get_all_extramurals(
+    async_parser: AsyncParser,
+) -> None:
+    if await async_skip_on_break(async_parser):
+        return
+
+    extramurals = await async_parser.get_all_extramurals()
+
+    assert len(extramurals) > 0, "Extramural faculties not found"
+
+    assert extramurals[0].parent_id != extramurals[1].parent_id, (
+        "Extramural faculties should have different parent ids"
+    )
+    assert extramurals[0].prefix != extramurals[1].prefix, (
+        "Extramural faculties should have different prefixes"
+    )
+    assert "Заочне навчання" in extramurals[0].faculty_name, (
+        "Extramural faculty name should contain 'Заочне навчання'"
+    )

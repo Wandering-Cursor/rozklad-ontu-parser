@@ -117,7 +117,7 @@ class AsyncParser(BaseClass):
         included in the Faculty dataclass.
         """
         faculty_data = await self.sender.send_request(
-            method="GET",
+            method="POST",
             data={"facultyid": faculty_id},
         )
 

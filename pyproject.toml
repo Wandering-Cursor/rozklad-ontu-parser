@@ -1,6 +1,6 @@
 [project]
 name = "ontu-parser"
-version = "1.0.1"
+version = "1.0.2"
 description = "Parser for the Schedule of the Odessa National Technical University (ONTU) schedule website."
 readme = "README.md"
 authors = [
@@ -13,7 +13,6 @@ dependencies = [
     "httpx>=0.28.1, <0.29.0",
     "pydantic>=2.13.0, <2.14",
     "pydantic-settings>=2.13.1",
-    "requests>=2.33.1, <2.34.0",
 ]
 
 classifiers = [
