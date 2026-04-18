@@ -1,5 +1,5 @@
 from bs4 import BeautifulSoup
-from httpx import Response
+from httpx import HTTPStatusError, Response
 
 from ontu_parser.dataclasses import (
     Department,
@@ -37,10 +37,20 @@ class Parser(BaseClass):
             self.sender = RequestSender()
 
     def _get_page(self, response: Response) -> BeautifulSoup:
+        try:
+            response.raise_for_status()
+        except HTTPStatusError as e:
+            raise ParingError(
+                "Failed to get page!",
+                content=str(response),
+                underlying_error=e,
+            ) from e
+
         content = response.content
         if not content:
             raise ParingError("Response has no content!", content=str(response))
         decoded_content = content.decode("utf-8")
+
         return BeautifulSoup(decoded_content, "html.parser")
 
     def is_on_break(self) -> bool:

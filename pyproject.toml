@@ -1,7 +1,7 @@
 [project]
 name = "ontu-parser"
-version = "1.0.0"
-description = "Add your description here"
+version = "1.0.1"
+description = "Parser for the Schedule of the Odessa National Technical University (ONTU) schedule website."
 readme = "README.md"
 authors = [
     { name = "Pavlo Pohorieltsev", email = "49622129+makisukurisu@users.noreply.github.com" }
@@ -18,10 +18,11 @@ dependencies = [
 
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: BSD License",
     "Operating System :: OS Independent",
     "Natural Language :: English",
 ]
+license = "BSD-3-Clause"
+license-files = ["LICENSE"]
 
 [project.urls]
 "Homepage" = "https://github.com/Wandering-Cursor/rozklad-ontu-parser"
