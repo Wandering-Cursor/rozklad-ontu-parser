@@ -8,6 +8,7 @@ from httpx import HTTPStatusError
 from ontu_parser.dataclasses.sender import SenderOptions
 from ontu_parser.errors import ParsingError
 from ontu_parser.parser._async import AsyncParser
+from test.common import async_skip_on_break
 
 
 @pytest_asyncio.fixture()
@@ -28,8 +29,13 @@ async def async_parser_with_invalid_cookies() -> AsyncGenerator[AsyncParser, Non
 
 @pytest.mark.asyncio
 async def test_async_parser_with_invalid_cookies(
+    async_parser: AsyncParser,
     async_parser_with_invalid_cookies: AsyncParser,
 ) -> None:
+    # Using a "valid" parser to ensure that the test is not broken due to other reasons
+    if await async_skip_on_break(async_parser):
+        return
+
     with pytest.raises(ParsingError) as exc_info:
         await async_parser_with_invalid_cookies.get_faculties()
 

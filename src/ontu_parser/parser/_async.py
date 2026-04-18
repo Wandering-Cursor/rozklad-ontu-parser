@@ -14,6 +14,7 @@ from ontu_parser.dataclasses.pair import StudentsPair, TeachersPair
 from ontu_parser.dataclasses.sender import SenderOptions
 from ontu_parser.errors import ParsingError
 from ontu_parser.utils.request_sender import AsyncRequestSender
+from ontu_parser.utils.text import trim_text
 
 
 class AsyncParser(BaseClass):
@@ -41,14 +42,24 @@ class AsyncParser(BaseClass):
             response.raise_for_status()
         except HTTPStatusError as e:
             raise ParsingError(
-                "Failed to get page!",
-                content=str(response),
+                message=str(e),
+                content=trim_text(
+                    response.content.decode("utf-8", errors="ignore") if response.content else ""
+                ),
                 underlying_error=e,
             ) from e
 
         content = response.content
+
         if not content:
-            raise ParsingError("Response has no content!", content=str(response))
+            raise ParsingError(
+                "Response has no content!",
+                content=trim_text(
+                    response.content.decode("utf-8", errors="ignore") if response.content else ""
+                ),
+                underlying_error=None,
+            )
+
         decoded_content = content.decode("utf-8")
 
         return BeautifulSoup(decoded_content, "html.parser")
